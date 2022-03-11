@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\libs\facades\ImgMgmt;
+use App\Http\Controllers\libs\facades\ResSt;
+use App\Http\Controllers\libs\ImageManagement;
+use App\Http\Controllers\libs\ResponseStructure;
+
 return [
 
     /*
@@ -175,6 +180,8 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
+        // Laravel Intervention
+        Intervention\Image\ImageServiceProvider::class,
     ],
 
     /*
@@ -230,6 +237,8 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
 
+        // Laravel Intervention
+        'Image' => Intervention\Image\Facades\Image::class,
     ],
 
 ];
