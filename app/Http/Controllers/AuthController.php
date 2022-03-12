@@ -9,6 +9,7 @@ use App\Http\Requests\Auth\PasswordRequest;
 use App\Http\Requests\Auth\ProfileRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
+use App\Models\UserPassword;
 use App\Models\UserProfile;
 use Carbon\Carbon;
 use Exception;
@@ -26,8 +27,15 @@ class AuthController extends Controller
         try {
             $user = new User();
             $user->username = $request->username;
-            $user->password = bcrypt($request->password);
             if ($user->save()) {
+                $userPassword = new UserPassword();
+                $userPassword->user_id = $user->id;
+                $userPassword->password = bcrypt($request->password);
+                if (!$userPassword->save()) {
+                    DB::rollBack();
+                    return ResSt::fail();
+                }
+
                 $userProfile = new UserProfile();
                 $userProfile->user_id = $user->id;
                 $userProfile->first_name = $request->first_name;
@@ -52,7 +60,8 @@ class AuthController extends Controller
                     $token_access = $user->createToken('web', ['system:management'])->plainTextToken;
                     return ResSt::response(true, 201, __('auth.register.success'), [
                         'token_access' => $token_access,
-                        'user' => $user
+                        'full_name' => $userProfile->full_name,
+                        'thumbnail' => $userProfile->image_path
                     ]);
                 } else {
                     DB::rollBack();
@@ -76,14 +85,21 @@ class AuthController extends Controller
             return ResSt::response(false, 400, __('auth.login.username_not_match'));
         }
 
-        if (!Hash::check($request->password, $user->password)) {
+        $current_password = UserPassword::where('user_id', $user->id)->orderBy('created_at', 'desc')->first();
+
+        if (!$current_password->password) {
+            return ResSt::response(false, 400, __('auth.login.password_incorrect'));
+        }
+
+        if (!Hash::check($request->password, $current_password->password)) {
             return ResSt::response(false, 400, __('auth.login.password_incorrect'));
         }
 
         $token_access = $user->createToken('web', ['system:management'])->plainTextToken;
         return ResSt::response(true, 200, __('auth.login.success'), [
             'token_access' => $token_access,
-            'user' => $user
+            'full_name' => $user->profile->full_name,
+            'thumbnail' => $user->profile->image_path
         ]);
     }
 
@@ -102,16 +118,15 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            $user->push($user->profile);
             return ResSt::response(true, 200, null, [
-                'user' => $user
+                'profile' => $user->profile
             ]);
         } catch (Exception $e) {
             return ResSt::fail();
         }
     }
 
-    public function changeProfile(ProfileRequest $request)
+    public function updateProfile(ProfileRequest $request)
     {
         try {
             $userProfile = $request->user()->profile;
@@ -119,6 +134,10 @@ class AuthController extends Controller
             $userProfile->last_name = $request->last_name;
 
             if ($request->hasFile('image') and $request->file('image')->isValid()) {
+                $request->validate([
+                    'image' => 'image|mimes:jpeg,png,jpg|max:2048'
+                ]);
+
                 //Remove old image
                 if ($userProfile->image != null) {
                     $rm_image_path = str_replace('/storage', '', $userProfile->image);
@@ -151,11 +170,11 @@ class AuthController extends Controller
         }
     }
 
-    public function changePassword(PasswordRequest $request)
+    public function updatePassword(PasswordRequest $request)
     {
         try {
             $user = $request->user();
-            if (Hash::check($request->old_password, $user->password)) {
+            if (Hash::check($request->current_password, $user->password)) {
 
                 $user->password = Hash::make($request->password);
                 if ($user->save()) {
