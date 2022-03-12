@@ -51,7 +51,8 @@ class AuthController extends Controller
                     DB::commit();
                     $token_access = $user->createToken('web', ['system:management'])->plainTextToken;
                     return ResSt::response(true, 201, __('auth.register.success'), [
-                        'token_access' => $token_access
+                        'token_access' => $token_access,
+                        'user' => $user
                     ]);
                 } else {
                     DB::rollBack();
@@ -81,7 +82,8 @@ class AuthController extends Controller
 
         $token_access = $user->createToken('web', ['system:management'])->plainTextToken;
         return ResSt::response(true, 200, __('auth.login.success'), [
-            'token_access' => $token_access
+            'token_access' => $token_access,
+            'user' => $user
         ]);
     }
 
