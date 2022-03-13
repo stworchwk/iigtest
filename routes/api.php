@@ -19,7 +19,7 @@ Route::post('/register', [AuthController::class, 'register']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/myProfile', [AuthController::class, 'myProfile']);
-    Route::post('/changeProfile', [AuthController::class, 'changeProfile']);
-    Route::post('/changePassword', [AuthController::class, 'changePassword']);
+    Route::post('/updateProfile', [AuthController::class, 'updateProfile']);
+    Route::post('/updatePassword', [AuthController::class, 'updatePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
