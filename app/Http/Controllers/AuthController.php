@@ -42,6 +42,10 @@ class AuthController extends Controller
                 $userProfile->last_name = $request->last_name;
 
                 if ($request->hasFile('image') and $request->file('image')->isValid()) {
+                    $request->validate([
+                        'image' => 'image|mimes:jpeg,png,jpg|max:2048'
+                    ]);
+
                     $extension = $request->image->extension();
                     $imageName = sha1(Carbon::now() . microtime()) . "." . $extension;
                     $sub_path = 'users/';
@@ -174,10 +178,27 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            if (Hash::check($request->current_password, $user->password)) {
+            $current_password = UserPassword::where('user_id', $user->id)->orderBy('created_at', 'desc')->first();
 
-                $user->password = Hash::make($request->password);
-                if ($user->save()) {
+            if (Hash::check($request->current_password, $current_password->password)) {
+
+                $my_passwords = UserPassword::where('user_id', $user->id)->orderBy('created_at', 'desc')->limit(5)->get();
+                $have_duplicate = false;
+                foreach($my_passwords as $my_password){
+                    if (Hash::check($request->password, $my_password->password)) {
+                        $have_duplicate = true;
+                        break;
+                    }
+                }
+
+                if ($have_duplicate){
+                    return ResSt::response(false, 200, __('auth.change_password.new_password_duplicate'));
+                }
+
+                $userPassword = new UserPassword();
+                $userPassword->user_id = $user->id;
+                $userPassword->password = Hash::make($request->password);
+                if ($userPassword->save()) {
                     // Revoke all tokens
                     $user->tokens()->delete();
 

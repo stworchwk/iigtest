@@ -16,7 +16,6 @@ class UserPassword extends Model
     }
 
     protected $hidden = [
-        'password',
         'updated_at',
         'deleted_at'
     ];
