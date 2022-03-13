@@ -47,17 +47,19 @@ RUN chown -R www-data:www-data \
         /var/www/html/storage \
         /var/www/html/bootstrap/cache
 
-COPY .env.example .env
-RUN php artisan key:generate \
-        php artisan config:cache \
-        php artisan storage:link
-
 # Change current user to www
 USER www
 
 # Expose port 9000 and start php-fpm server
 EXPOSE 9000
 CMD ["php-fpm"]
+
+# RUN docker-compose exec app cp .env.example .env
+
+# RUN docker-compose exec app php artisan key:generate \
+#         docker-compose exec app php artisan config:cache \
+#         docker-compose exec app php artisan storage:link
+
 
 #RUN docker-compose exec db mysql -u root -p
 #RUN stworchwk
