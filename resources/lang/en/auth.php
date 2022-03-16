@@ -36,7 +36,8 @@ return [
     'change_password' => [
         'success' => 'Password changed.',
         'current_incorrect_failed' => 'Your current password is incorrect',
-        'new_password_duplicate' => 'Your new password duplicate in your last 5 password records'
+        'new_password_duplicate' => 'Your new password duplicate in your last 5 password records',
+        'new_password_is_weak' => 'Your new password is not strong'
     ]
 
 ];

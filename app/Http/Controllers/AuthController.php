@@ -25,6 +25,10 @@ class AuthController extends Controller
     {
         DB::beginTransaction();
         try {
+            if (!$this->checkStrongPassword($request->password)) {
+                DB::rollBack();
+                return ResSt::fail();
+            }
             $user = new User();
             $user->username = $request->username;
             if ($user->save()) {
@@ -182,16 +186,20 @@ class AuthController extends Controller
 
             if (Hash::check($request->current_password, $current_password->password)) {
 
+                if (!$this->checkStrongPassword($request->password)){
+                    return ResSt::response(false, 200, __('auth.change_password.new_password_is_weak'));
+                }
+
                 $my_passwords = UserPassword::where('user_id', $user->id)->orderBy('created_at', 'desc')->limit(5)->get();
                 $have_duplicate = false;
-                foreach($my_passwords as $my_password){
+                foreach ($my_passwords as $my_password) {
                     if (Hash::check($request->password, $my_password->password)) {
                         $have_duplicate = true;
                         break;
                     }
                 }
 
-                if ($have_duplicate){
+                if ($have_duplicate) {
                     return ResSt::response(false, 200, __('auth.change_password.new_password_duplicate'));
                 }
 
@@ -215,4 +223,13 @@ class AuthController extends Controller
     }
 
     //End Profile Manage
+
+    private function checkStrongPassword($password)
+    {
+        if (!preg_match("#.*^(?=.{6,20})(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*\W).*$#", $password)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 }
